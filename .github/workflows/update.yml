@@ -1,0 +1,64 @@
+name: Daily archive refresh
+
+on:
+  schedule:
+    # Every day 06:30 UTC (staggered off the sibling archives)
+    - cron: "30 6 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: archive-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Scrape full archive from Arctic Shift (posts + comments)
+        run: python3 scrape.py
+
+      - name: Prefilter and rebuild browser data
+        # classifications.jsonl is produced locally with `claude -p` (classify.py)
+        # and committed by hand; this job only refreshes the archive around it.
+        # New posts show up as status=pending until the next local classify run.
+        run: |
+          python3 prefilter.py
+          python3 build_data.py
+
+      - name: Commit refreshed data if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data.json filtered.json candidates.jsonl threads
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            STAMP=$(date -u +"%Y-%m-%d")
+            git commit -m "Daily archive refresh ($STAMP)"
+            # Remote may have advanced (local classify push, overlapping run).
+            # Rebase onto it and retry so a non-fast-forward push doesn't fail.
+            for attempt in 1 2 3 4 5; do
+              if git push; then
+                echo "Pushed on attempt $attempt."
+                break
+              fi
+              echo "Push rejected (attempt $attempt) — rebasing and retrying."
+              git pull --rebase origin main
+              if [ "$attempt" -eq 5 ]; then
+                echo "Push still failing after 5 attempts." >&2
+                exit 1
+              fi
+            done
+          fi

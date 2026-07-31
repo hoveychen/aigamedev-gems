@@ -1,0 +1,22 @@
+# Raw archive (regenerate with scrape.py) — hundreds of MB
+posts.jsonl
+comments.jsonl
+.cursor_posts
+.cursor_comments
+scrape.log
+
+# Local research bundles (dump.py)
+research/
+
+# Agent scratch
+TASKS.md
+.worktrees/
+.playwright-cli/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# macOS
+.DS_Store

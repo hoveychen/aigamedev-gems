@@ -1,0 +1,12 @@
+{"id": "1upy4ak", "verdict": "hype", "tags": ["showcase", "promo"], "summary_zh": "展示AI资产合并技巧但拒绝公开，仅提供私聊获取，无可复用的工作流或工具细节。", "confidence": 0.85}
+{"id": "142j3yt", "verdict": "gem", "tags": ["debate", "news", "lesson"], "summary_zh": "Steam官方拒绝含AI生成资产的游戏，原文提供完整审核逻辑和法律隐忧，是开发者的重要政策参考点。", "confidence": 0.9}
+{"id": "1uz2ihm", "verdict": "ok", "tags": ["workflow", "codegen", "showcase", "promo", "assets"], "summary_zh": "3周内用Cursor+特定模型(Grok/Opus/GPT)和ChatGPT Images API自定义工具创建游戏，有模型选择细节但主要目的是Steam推广。", "confidence": 0.78}
+{"id": "1udcadd", "verdict": "hype", "tags": ["debate", "promo"], "summary_zh": "抱怨反AI群体的观点文章，缺乏任何开发实践或工具细节，纯舆论交锋。", "confidence": 0.85}
+{"id": "1umiurs", "verdict": "ok", "tags": ["showcase", "codegen", "assets"], "summary_zh": "展示Fable 5生成的程序化生物（SDF着色器+动画），有技术名词但缺乏提示词或创作流程。", "confidence": 0.72}
+{"id": "1v6wsy0", "verdict": "ok", "tags": ["showcase", "workflow", "codegen", "assets", "promo"], "summary_zh": "8个月solo开发登顶Steam演示榜#2，提及AI用于代码和视觉但无具体工具/模型/方法说明，侧重成就而非方法论。", "confidence": 0.74}
+{"id": "1uo61wx", "verdict": "ok", "tags": ["showcase", "codegen", "tooling", "workflow"], "summary_zh": "用Fable 5在three.js构建实时程序化地牢，指向Twitter共享提示词但帖子本身极少信息。", "confidence": 0.68}
+{"id": "1u08j6y", "verdict": "hype", "tags": ["debate", "promo"], "summary_zh": "讨论隐瞒AI使用的话题，纯观点型无开发实践，涉及不透明做法。", "confidence": 0.85}
+{"id": "1u43b1s", "verdict": "ok", "tags": ["showcase", "codegen", "tooling"], "summary_zh": "展示Claude Fable 5全自动编写的浏览器应用（6万单位），有技术指标但完全缺乏工作流程、提示词或方法论。", "confidence": 0.8}
+{"id": "1v8x5f1", "verdict": "gem", "tags": ["workflow", "assets", "tooling", "lesson"], "summary_zh": "完整可复用的多模型流程：GPT-5.6 sol+Image-2生成场景→Seedance 2.0转场，提供成本($10)、提示技巧(光照/角度)、已知限制(一致性漂移)等详细细节。", "confidence": 0.92}
+{"id": "1va72ps", "verdict": "hype", "tags": ["showcase", "promo"], "summary_zh": "首款游戏早期展示，受Hollow Knight启发，无任何工具、模型或开发方法信息。", "confidence": 0.85}
+{"id": "1smw8nr", "verdict": "hype", "tags": ["debate", "promo"], "summary_zh": "指控反AI艺术家组织攻击独立开发者，纯社交戏剧和指控，无开发相关具体内容。", "confidence": 0.85}

@@ -26,7 +26,27 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Scrape full archive from Arctic Shift (posts + comments)
+      # posts.jsonl / comments.jsonl and their cursors are gitignored, so without a
+      # cache every run re-scrapes the whole history from 2022 — ~850 requests and
+      # 15-20 minutes. scrape.py is resumable (it reads the cursor and continues), so
+      # restoring these four files turns the step into "fetch today's posts": measured
+      # 2.3s for 8 new posts and 58 new comments. A cache miss simply falls back to a
+      # full scrape, which is what the job did before.
+      - name: Restore raw archive
+        uses: actions/cache@v4
+        with:
+          path: |
+            posts.jsonl
+            comments.jsonl
+            .cursor_posts
+            .cursor_comments
+          # keys must be unique to be written, so stamp the run and fall back to the
+          # newest previous archive via the prefix
+          key: raw-archive-${{ github.run_id }}
+          restore-keys: |
+            raw-archive-
+
+      - name: Scrape new posts + comments from Arctic Shift
         run: python3 scrape.py
 
       - name: Ensure ffmpeg
@@ -35,17 +55,26 @@ jobs:
       - name: Prefilter
         run: python3 prefilter.py
 
+      # build_data runs twice on purpose. shots.py reads data.json to find media
+      # posts, so with a single pass at the end it would only ever see YESTERDAY's
+      # index and today's posts would wait a day for their still (caught exactly that
+      # locally: new video post 1vblj6i had no still and wasn't even in media/.failed).
+      # First pass publishes today's posts, shots.py renders them, second pass writes
+      # the `still` paths into data.json / filtered.json / threads/<id>.json. Each
+      # pass is a couple of seconds.
+      - name: Build browser data (first pass — publishes today's posts)
+        run: python3 build_data.py
+
       - name: Render stills for new media posts
         # Incremental: media/ is committed, so this only pays for posts that appeared
         # since the last run. Capped so one busy day can't turn into an hour-long job;
         # the remainder gets picked up tomorrow (or locally via `python3 shots.py`).
         run: python3 shots.py --workers 6 --limit 400
 
-      - name: Rebuild browser data
+      - name: Rebuild browser data (second pass — wires in the new stills)
         # classifications.jsonl is produced locally with `claude -p` (classify.py)
         # and committed by hand; this job only refreshes the archive around it.
         # New posts show up as status=pending until the next local classify run.
-        # Runs after shots.py so new stills land in data.json / threads/<id>.json.
         run: python3 build_data.py
 
       - name: Commit refreshed data if changed

@@ -16,9 +16,10 @@ when Reddit refuses to stream it:
 
 ![The reader with a post open, showing the rendered video frames](screenshot-reader.png)
 
-**10,800** posts archived (2022-12 → 2026-07-31) · **85,676** comments ·
-**5,354** prefilter candidates · LLM-classified so far: **2 gem** / 5 ok / 5 hype
-(a 12-post pilot batch — everything else sits as `pending` until the next local run)
+**10,808** posts archived (2022-12 → 2026-07-31) · **85,734** comments ·
+**5,356** prefilter candidates · **4,495** pre-rendered media stills ·
+LLM-classified so far: **2 gem** / 5 ok / 5 hype (a 12-post pilot batch — everything
+else sits as `pending` until the next local run)
 
 ## How it works
 
@@ -70,8 +71,8 @@ This is the third of a family ([reddit-gems](https://github.com/hoveychen/reddit
 [ai-trading-gems](https://github.com/hoveychen/ai-trading-gems)), and r/aigamedev
 forced two real changes rather than a rename:
 
-1. **The media *is* the content.** Half the archive — 5,410 posts — is video (2,706),
-   image (1,147), gallery (941) or YouTube (616), another 860 are external links, and
+1. **The media *is* the content.** Half the archive — 5,413 posts — is video (2,709),
+   image (1,147), gallery (941) or YouTube (616), another 861 are external links, and
    43% of all posts carry no body text at all. So the reader embeds
    v.redd.it video (HLS with mp4 fallback), gallery carousels, images and YouTube
    inline, list rows carry a still, and a post with an empty body but a playable
@@ -182,11 +183,11 @@ Tags: `workflow` `assets` `codegen` `npc-ai` `showcase` `tooling` `lesson`
   (~90% playable). Blocked ones fall back to a still plus a link to the original
   post instead of a dead player.
 - **Not every media post kept its media.** Arctic Shift preserved a playable URL for
-  2,052 of 2,706 video posts (75%) and the full image list for 542 of 941 galleries
+  2,055 of 2,709 video posts (75%) and the full image list for 542 of 941 galleries
   (57%, averaging 4.4 images). The rest show their still — 66% of all posts have
   one — and link out.
-- **83% of all media posts have a rendered still** (4,494 of 5,410 — 2,511 of 2,887
-  candidates, 1,983 of 2,523 filtered). The rest are posts whose media has actually
+- **83% of all media posts have a rendered still** (4,495 of 5,413 — 2,512 of 2,888
+  candidates, 1,983 of 2,525 filtered). The rest are posts whose media has actually
   gone from Reddit's CDN: retrying 40 failures at low concurrency recovered only 5, so
   they're 404s rather than throttling. Failure rate runs ~12% on candidate videos and
   higher on filtered posts (21%), which skew older and lower-effort.

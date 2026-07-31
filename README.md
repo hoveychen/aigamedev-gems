@@ -90,11 +90,52 @@ forced two real changes rather than a rename:
 | `prefilter.py` | Heuristic candidate filter → `candidates.jsonl` |
 | `classify.py` | Local `claude -p` batch classification → `classifications.jsonl` |
 | `build_data.py` | Builds `data.json` + `filtered.json` + `threads/` |
-| `dump.py` | Markdown research bundles → `research/` (gitignored) |
+| `shots.py` | Renders `media/<id>.jpg` — a 2×2 contact sheet of video frames / gallery images so a model can *see* the post |
+| `media/<id>.jpg` | Pre-rendered still per media post (committed; survives Reddit's per-video blocking) |
+| `dump.py` | Markdown research bundles + their stills → `research/` (gitignored) |
 | `serve.sh` | Local launch (`./serve.sh`, needs HTTP for `fetch`) |
 
 > `posts.jsonl` / `comments.jsonl` (the raw archive) are not committed — run
 > `python3 scrape.py` to regenerate them.
+
+## Hand one post to an agent
+
+There is no server to run. The refresh job is a GitHub Action and everything it
+produces is a static file, so **the file layout is the API** — the same paths resolve
+on disk and over HTTPS.
+
+| Endpoint | What it is |
+|---|---|
+| `data.json` | The index — every candidate post with status, tags, 中文摘要, media fields |
+| `threads/<id>.json` | **One post, self-contained**: verdict, tags, summary, flair, score, raw body, media (incl. `still`), prefilter signals, and the full nested comment tree |
+| `media/<id>.jpg` | A still the model can look at: 4 video frames tiled 2×2, or the gallery's images, or the image at full width |
+| `filtered.json` | Prefilter-rejected posts (index only, no thread file) |
+
+```bash
+# local
+cat threads/1uh94v8.json | jq '{title, status, tags, summary_zh, media, n: (.comments|length)}'
+
+# or straight off Pages, no clone needed
+curl -s https://hoveychen.github.io/aigamedev-gems/threads/1uh94v8.json | jq .title
+curl -sO https://hoveychen.github.io/aigamedev-gems/media/1uh94v8.jpg
+```
+
+`threads/<id>.json` is deliberately the *whole* post — one fetch, no joins against
+`data.json` — because the point is to drop a single post into an agent's context and
+ask about the project inside it.
+
+To hand a set of posts to `claude -p` as markdown plus images:
+
+```bash
+python3 dump.py --ids 1uh94v8 1uomio3        # → research/<date>-<id>-<slug>.{md,jpg}
+claude -p "For each post in research/, tell me what the project actually is, which \
+models/tools it used, and whether the method is reproducible. Look at the contact \
+sheet images." --add-dir research
+```
+
+`dump.py` copies each post's still next to its markdown and links it inline, so the
+model reads the thread and looks at the artifact in the same pass. `--status gem`,
+`--tags workflow assets`, `--since`, `--min-score` all still work for bulk selection.
 
 ## Run locally
 

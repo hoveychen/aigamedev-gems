@@ -17,10 +17,12 @@ import datetime as dt
 import json
 import os
 import re
+import shutil
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(HERE, "data.json")
 THREADS_DIR = os.path.join(HERE, "threads")
+MEDIA_DIR = os.path.join(HERE, "media")
 OUT_DIR = os.path.join(HERE, "research")
 SUB = "aigamedev"
 
@@ -42,7 +44,7 @@ def render_comment(c, depth=0):
     return "\n".join(lines)
 
 
-def render_post(meta, thread):
+def render_post(meta, thread, still_name=None):
     created = dt.datetime.fromtimestamp(meta["created_utc"]).strftime("%Y-%m-%d")
     lines = [
         f"# {meta['title']}",
@@ -60,6 +62,11 @@ def render_post(meta, thread):
     if meta.get("kind") and meta["kind"] not in ("self", "link"):
         lines.append(f"- media: {meta['kind']}"
                      + (f" ({len(meta['gallery'])} images)" if meta.get("gallery") else ""))
+    if still_name:
+        # Sits right next to the .md so `claude -p --add-dir research` can open it.
+        lines += ["", f"![contact sheet of the post's media]({still_name})", "",
+                  "*(frames/images rendered locally by shots.py — the model can look "
+                  "at this instead of guessing what the demo showed)*"]
     lines += ["", "## Post body", ""]
     lines.append(thread.get("selftext") or "*(no body / link or media post)*")
     if meta.get("url"):
@@ -104,7 +111,7 @@ def main():
 
     os.makedirs(OUT_DIR, exist_ok=True)
     index_lines = ["# Research dump index", ""]
-    written = skipped = 0
+    written = skipped = stills = 0
     for p in sorted(selected, key=lambda x: -x["score"]):
         tpath = os.path.join(THREADS_DIR, f"{p['id']}.json")
         if not os.path.exists(tpath):
@@ -113,9 +120,16 @@ def main():
         with open(tpath) as f:
             thread = json.load(f)
         created = dt.datetime.fromtimestamp(p["created_utc"]).strftime("%Y%m%d")
-        fname = f"{created}-{p['id']}-{slugify(p['title'])}.md"
-        with open(os.path.join(OUT_DIR, fname), "w") as f:
-            f.write(render_post(p, thread))
+        stem = f"{created}-{p['id']}-{slugify(p['title'])}"
+        still_name = None
+        src_still = os.path.join(MEDIA_DIR, f"{p['id']}.jpg")
+        if os.path.exists(src_still):
+            still_name = f"{stem}.jpg"
+            shutil.copyfile(src_still, os.path.join(OUT_DIR, still_name))
+            stills += 1
+        with open(os.path.join(OUT_DIR, f"{stem}.md"), "w") as f:
+            f.write(render_post(p, thread, still_name))
+        fname = f"{stem}.md"
         index_lines.append(
             f"- [{p['title']}]({fname}) — {p['status']}, {p['score']} pts"
             + (f" — {p['summary_zh']}" if p.get("summary_zh") else ""))
@@ -123,7 +137,7 @@ def main():
 
     with open(os.path.join(OUT_DIR, "INDEX.md"), "w") as f:
         f.write("\n".join(index_lines) + "\n")
-    print(f"research/: {written} posts dumped"
+    print(f"research/: {written} posts dumped, {stills} with a media contact sheet"
           + (f" ({skipped} skipped, no thread file — not prefilter candidates)"
              if skipped else ""))
 

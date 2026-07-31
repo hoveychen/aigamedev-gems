@@ -128,7 +128,19 @@ curl -sO https://hoveychen.github.io/aigamedev-gems/media/1uh94v8.jpg
 
 `threads/<id>.json` is deliberately the *whole* post — one fetch, no joins against
 `data.json` — because the point is to drop a single post into an agent's context and
-ask about the project inside it.
+ask about the project inside it. Two files and no clone is enough:
+
+```bash
+B=https://hoveychen.github.io/aigamedev-gems
+curl -s $B/threads/1va87li.json -o post.json
+curl -s "$B/$(jq -r .media.still post.json)" -o still.jpg
+claude -p "Read post.json and look at still.jpg. What is this project, what is \
+actually in the frames, and is the method reproducible?" --add-dir .
+```
+
+(Verified end-to-end: from those two files alone the model named the project, listed
+what each of the four frames showed, and used a commenter's complaint to conclude the
+method was *not* reproducible.)
 
 To hand a set of posts to `claude -p` as markdown plus images:
 
@@ -173,10 +185,11 @@ Tags: `workflow` `assets` `codegen` `npc-ai` `showcase` `tooling` `lesson`
   2,052 of 2,706 video posts (75%) and the full image list for 542 of 941 galleries
   (57%, averaging 4.4 images). The rest show their still — 66% of all posts have
   one — and link out.
-- **86% of candidate media posts have a rendered still** (2,511 of 2,887). The 376
-  that don't are posts whose media has actually gone from Reddit's CDN — retrying 40
-  of them at low concurrency recovered only 5, so the rest are 404s, not throttling.
-  Failure rate by kind: video 12%, image 13%, gallery 19%, YouTube 0%.
+- **83% of all media posts have a rendered still** (4,494 of 5,410 — 2,511 of 2,887
+  candidates, 1,983 of 2,523 filtered). The rest are posts whose media has actually
+  gone from Reddit's CDN: retrying 40 failures at low concurrency recovered only 5, so
+  they're 404s rather than throttling. Failure rate runs ~12% on candidate videos and
+  higher on filtered posts (21%), which skew older and lower-effort.
 - **Comment archives are not complete.** Arctic Shift captures a large share but not
   every reply of a big thread (a 715-comment post archives ~810 nodes across
   nesting, older threads noticeably fewer), so counts in the reader can sit below

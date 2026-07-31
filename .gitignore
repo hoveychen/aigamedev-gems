@@ -23,3 +23,6 @@ __pycache__/
 
 # shots.py run log
 shots.log
+
+# second shots run log
+shots_all.log

@@ -10806,3 +10806,4 @@
 {"id": "1vbohxr", "candidate": false, "reasons": ["nothing_to_read"], "signals": {"body_len": 0, "author_followup_chars": 0, "author_followup_count": 0, "score": 1, "num_comments": 0, "kind": "self", "flair": "Research"}}
 {"id": "1vboicj", "candidate": true, "reasons": ["body>=500"], "signals": {"body_len": 839, "author_followup_chars": 0, "author_followup_count": 0, "score": 1, "num_comments": 0, "kind": "self", "flair": "Discussion"}}
 {"id": "1vbortg", "candidate": false, "reasons": ["nothing_to_read"], "signals": {"body_len": 0, "author_followup_chars": 0, "author_followup_count": 0, "score": 1, "num_comments": 0, "kind": "self", "flair": "Demo | Project | Workflow"}}
+{"id": "1vbp9k7", "candidate": true, "reasons": ["body>=500"], "signals": {"body_len": 716, "author_followup_chars": 0, "author_followup_count": 0, "score": 1, "num_comments": 0, "kind": "self", "flair": "Commercial Self Promotion"}}

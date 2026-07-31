@@ -48,7 +48,14 @@ MEDIA_KINDS = ("reddit_video", "gallery", "image", "youtube")
 
 
 def run(cmd, timeout=FFMPEG_TIMEOUT):
-    return subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+    """Never raise: a timeout here would bubble out of render()'s try block and skip
+    the thumbnail fallback below it. Defensive — not a bug I observed, ffmpeg fails
+    fast on a 403 in practice — but the fallback is the whole reason blocked videos
+    still get a still."""
+    try:
+        return subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        return subprocess.CompletedProcess(cmd, 124, "", f"timed out after {timeout}s")
 
 
 def fetch(url, dest):

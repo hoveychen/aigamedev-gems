@@ -10,6 +10,12 @@ Pages, and a local research pipeline for deep analysis with `claude -p`.
 
 ![Screenshot of the aigamedev-gems reader](screenshot.png)
 
+Opening a post gives you the media, the 中文 verdict summary and the whole thread —
+and for video posts a locally rendered contact sheet, so the content is visible even
+when Reddit refuses to stream it:
+
+![The reader with a post open, showing the rendered video frames](screenshot-reader.png)
+
 **10,800** posts archived (2022-12 → 2026-07-31) · **85,676** comments ·
 **5,354** prefilter candidates · LLM-classified so far: **2 gem** / 5 ok / 5 hype
 (a 12-post pilot batch — everything else sits as `pending` until the next local run)
@@ -167,6 +173,10 @@ Tags: `workflow` `assets` `codegen` `npc-ai` `showcase` `tooling` `lesson`
   2,052 of 2,706 video posts (75%) and the full image list for 542 of 941 galleries
   (57%, averaging 4.4 images). The rest show their still — 66% of all posts have
   one — and link out.
+- **86% of candidate media posts have a rendered still** (2,511 of 2,887). The 376
+  that don't are posts whose media has actually gone from Reddit's CDN — retrying 40
+  of them at low concurrency recovered only 5, so the rest are 404s, not throttling.
+  Failure rate by kind: video 12%, image 13%, gallery 19%, YouTube 0%.
 - **Comment archives are not complete.** Arctic Shift captures a large share but not
   every reply of a big thread (a 715-comment post archives ~810 nodes across
   nesting, older threads noticeably fewer), so counts in the reader can sit below

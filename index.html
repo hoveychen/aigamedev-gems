@@ -442,14 +442,21 @@ function noteLinks(text){ const out=new Set(); let m; wikiRe.lastIndex=0;
 const KIND_LABEL={reddit_video:"视频",gallery:"相册",image:"图片",youtube:"YouTube",link:"外链",self:""};
 const KIND_ICON={reddit_video:"▶️",gallery:"🖼️",image:"🖼️",youtube:"▶️",link:"🔗",self:""};
 
-/* Small still for the list row. */
+/* Small still for the list row. The 140px CDN thumbnail comes FIRST here on purpose:
+   the cell is 132x86, and pulling the 900px local sheet for 60 rows would cost a few
+   MB to render thumbnails nobody can read at that size. `p.still` is the fallback,
+   which is also what covers the CDN thumbnails that have expired. The reader panel
+   does it the other way round — see mediaHTML. */
 function thumbHTML(p){
   const k=p.kind||"self";
   if(k==="self") return "";
   const tag=`<span class="kbadge">${esc(KIND_LABEL[k]||k)}${p.gallery&&p.gallery.length>1?" ×"+p.gallery.length:""}</span>`;
-  const src=(k==="image"&&/^https?:\/\//.test(p.url||"")?p.url:null) || (p.gallery&&p.gallery[0]) || p.thumbnail;
-  if(src) return `<div class="c-thumb"><img loading="lazy" src="${esc(src)}" alt="" onerror="this.style.display='none'">${tag}</div>`;
-  return `<div class="c-thumb"><div class="ph">${KIND_ICON[k]||"🔗"}</div>${tag}</div>`;
+  const src=p.thumbnail || p.still || (k==="image"&&/^https?:\/\//.test(p.url||"")?p.url:null) || (p.gallery&&p.gallery[0]);
+  if(!src) return `<div class="c-thumb"><div class="ph">${KIND_ICON[k]||"🔗"}</div>${tag}</div>`;
+  const alt=p.still&&p.still!==src
+    ? `onerror="this.onerror=null;this.src='${esc(p.still)}'"`
+    : `onerror="this.style.display='none'"`;
+  return `<div class="c-thumb"><img loading="lazy" src="${esc(src)}" alt="" ${alt}>${tag}</div>`;
 }
 
 /* Full embed for the reader panel. */
@@ -465,15 +472,15 @@ function mediaHTML(p){
     return `<div class="media"><iframe loading="lazy" src="https://www.youtube.com/embed/${esc(p.yt_id)}" allowfullscreen></iframe></div>`;
   }
   if(k==="reddit_video"){
+    const sheet=p.still||p.thumbnail;
+    const stillImg=sheet?`<img loading="lazy" src="${esc(sheet)}" alt="">`
+      :`<div class="ph"><span class="big">▶️</span>点击播放</div>`;
     if(p.video&&(p.video.hls||p.video.mp4)){
       const info=esc(JSON.stringify(p.video));
-      const still=p.thumbnail?`<img loading="lazy" src="${esc(p.thumbnail)}" alt="">`
-        :`<div class="ph"><span class="big">▶️</span>点击播放</div>`;
-      return `<div class="media" data-video='${info}'>${badge}${still}<div class="playbtn"><div class="circle">▶</div></div></div>`;
+      return `<div class="media" data-video='${info}' data-sheet="${esc(p.still||"")}">${badge}${stillImg}<div class="playbtn"><div class="circle">▶</div></div></div>`;
     }
-    const still=p.thumbnail?`<img loading="lazy" src="${esc(p.thumbnail)}" alt="">`:"";
-    return `<div class="media">${badge}${still}<div class="ph"><span class="big">▶️</span>
-      归档里没留下可播放的视频地址（老帖常见）<br>去 Reddit 原帖看 ↗</div></div>`;
+    return `<div class="media">${badge}${stillImg}<div class="ph"><span class="big">▶️</span>
+      归档里没留下可播放的视频地址（老帖常见）${p.still?"<br>上面是本地抽帧的画面":""}<br>去 Reddit 原帖看 ↗</div></div>`;
   }
   if(k==="gallery"){
     if(p.gallery&&p.gallery.length){
@@ -499,12 +506,20 @@ function mediaHTML(p){
    rejected). So playback needs a real dead end, otherwise those ~10% leave a black
    <video> sitting there looking like a bug in the page. */
 function videoDeadEnd(el, id){
+  const sheet=el.dataset.sheet||"";
   const badge=el.querySelector(".mbadge");
   el.innerHTML=""; if(badge) el.appendChild(badge);
+  // A blocked stream is not a blocked *post*: shots.py rendered these frames while
+  // the url still served, so show them instead of just an apology.
+  if(sheet){
+    const img=document.createElement("img");
+    img.loading="lazy"; img.src=sheet; el.appendChild(img);
+  }
   const ph=document.createElement("div");
   ph.className="ph";
-  ph.innerHTML=`<span class="big">🚫</span>Reddit 不再允许外部播放这个视频<br>
-    <a href="https://www.reddit.com/r/${SUB}/comments/${esc(id)}/" target="_blank" rel="noopener">↗ 去 Reddit 原帖看</a>`;
+  ph.innerHTML=(sheet?`<span class="big">🎞</span>Reddit 不再允许外部播放这个视频 —— 上面是本地抽帧的画面<br>`
+                     :`<span class="big">🚫</span>Reddit 不再允许外部播放这个视频<br>`)+
+    `<a href="https://www.reddit.com/r/${SUB}/comments/${esc(id)}/" target="_blank" rel="noopener">↗ 去 Reddit 原帖看</a>`;
   el.appendChild(ph);
 }
 function playVideo(el,id){

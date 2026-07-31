@@ -29,19 +29,30 @@ jobs:
       - name: Scrape full archive from Arctic Shift (posts + comments)
         run: python3 scrape.py
 
-      - name: Prefilter and rebuild browser data
+      - name: Ensure ffmpeg
+        run: ffmpeg -version >/dev/null 2>&1 || (sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg)
+
+      - name: Prefilter
+        run: python3 prefilter.py
+
+      - name: Render stills for new media posts
+        # Incremental: media/ is committed, so this only pays for posts that appeared
+        # since the last run. Capped so one busy day can't turn into an hour-long job;
+        # the remainder gets picked up tomorrow (or locally via `python3 shots.py`).
+        run: python3 shots.py --workers 6 --limit 400
+
+      - name: Rebuild browser data
         # classifications.jsonl is produced locally with `claude -p` (classify.py)
         # and committed by hand; this job only refreshes the archive around it.
         # New posts show up as status=pending until the next local classify run.
-        run: |
-          python3 prefilter.py
-          python3 build_data.py
+        # Runs after shots.py so new stills land in data.json / threads/<id>.json.
+        run: python3 build_data.py
 
       - name: Commit refreshed data if changed
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data.json filtered.json candidates.jsonl threads
+          git add data.json filtered.json candidates.jsonl threads media
           if git diff --cached --quiet; then
             echo "No changes to commit."
           else

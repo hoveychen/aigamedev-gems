@@ -34,6 +34,7 @@ CLASSIFICATIONS = os.path.join(HERE, "classifications.jsonl")
 DATA_OUT = os.path.join(HERE, "data.json")
 FILTERED_OUT = os.path.join(HERE, "filtered.json")
 THREADS_DIR = os.path.join(HERE, "threads")
+MEDIA_DIR = os.path.join(HERE, "media")
 SUB = "aigamedev"
 
 PREVIEW_LEN = 400
@@ -42,6 +43,11 @@ EMPTY = {"", "[removed]", "[deleted]"}
 MD_LINK_RE = re.compile(r"\[([^\]]*)\]\([^)]*\)")
 URL_RE = re.compile(r"https?://\S+")
 BAD_THUMBS = {"default", "self", "nsfw", "spoiler", "image", ""}
+
+
+def dt_iso(ts):
+    import datetime as _dt
+    return _dt.datetime.fromtimestamp(ts, _dt.UTC).strftime("%Y-%m-%d") if ts else ""
 
 
 def preview_text(body):
@@ -157,6 +163,11 @@ def media_fields(p, kind):
     thumb = extract_thumb(p)
     if thumb:
         out["thumbnail"] = thumb
+    # Pre-rendered contact sheet from shots.py, when one exists. The reader prefers
+    # it over the CDN thumbnail because it shows what the video/gallery actually
+    # contains — including for the ~10% of videos Reddit refuses to serve.
+    if os.path.exists(os.path.join(MEDIA_DIR, f"{p['id']}.jpg")):
+        out["still"] = f"media/{p['id']}.jpg"
     if kind == "youtube":
         yid = extract_yt_id(p.get("url") or "")
         if yid:
@@ -290,16 +301,41 @@ def main():
         if is_candidate:
             comments = sorted(comments_by_post.get(pid, []),
                               key=lambda c: c.get("created_utc") or 0)
+            # This file IS the per-post API: one fetch gives an agent everything it
+            # needs to judge the post on its own — verdict, tags, summary, the raw
+            # body, the full nested thread, and a path to a still it can actually
+            # look at. Resolvable both as a local path and as
+            # https://hoveychen.github.io/aigamedev-gems/threads/<id>.json
+            media = {"kind": kind}
+            if url:
+                media["url"] = url
+            still = os.path.join(MEDIA_DIR, f"{pid}.jpg")
+            if os.path.exists(still):
+                media["still"] = f"media/{pid}.jpg"
+            for key in ("video", "gallery", "yt_id", "thumbnail"):
+                if entry.get(key):
+                    media[key] = entry[key]
             thread = {
                 "id": pid,
+                "permalink": f"https://www.reddit.com/r/{SUB}/comments/{pid}/",
                 "title": p.get("title") or "",
                 "author": p.get("author") or "[deleted]",
                 "created_utc": p.get("created_utc") or 0,
+                "created": dt_iso(p.get("created_utc") or 0),
                 "score": p.get("score") or 0,
+                "num_comments": p.get("num_comments") or 0,
+                "flair": p.get("link_flair_text") or "",
+                "status": status,
+                "media": media,
                 "selftext": (p.get("selftext") or ""),
                 "url": p.get("url") or "",
+                "signals": signals,
                 "comments": build_comment_tree(comments, p.get("author") or ""),
             }
+            if cls:
+                thread["tags"] = cls.get("tags", [])
+                thread["summary_zh"] = cls.get("summary_zh", "")
+                thread["confidence"] = cls.get("confidence", 0.5)
             with open(os.path.join(THREADS_DIR, f"{pid}.json"), "w") as f:
                 json.dump(thread, f, ensure_ascii=False, separators=(",", ":"))
             n_threads += 1
